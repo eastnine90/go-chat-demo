@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package chat;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package="github.com/eastnine90/go-chat-demo/protos";
+
+service ChatRoom {
+    rpc Stream(stream StreamRequest) returns (stream StreamResponse) {}
+}
+
+message StreamRequest {
+    string name = 1;
+    string message = 2;
+}
+
+message StreamResponse {
+    google.protobuf.Timestamp timestamp = 1;
+    Message client_message =2;
+    message Message {
+        string name = 1;
+        string message = 2;
+    }
+}
