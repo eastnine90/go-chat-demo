@@ -3,23 +3,37 @@ syntax = "proto3";
 package chat;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 option go_package="github.com/eastnine90/go-chat-demo/protos";
 
-service ChatRoom {
-    rpc Stream(stream StreamRequest) returns (stream StreamResponse) {}
+service Chat {
+    rpc GetList(google.protobuf.Empty) returns (ChatRoomsResponse) {}
+    rpc EnterOrCreate(ChatRoomRequest) returns (stream ChatStreamResponse) {}
+    rpc SendChat(stream ChatMessage) returns (google.protobuf.Empty) {}
 }
 
-message StreamRequest {
-    string name = 1;
-    string message = 2;
-}
-
-message StreamResponse {
-    google.protobuf.Timestamp timestamp = 1;
-    Message client_message =2;
-    message Message {
+message ChatRoomsResponse {
+    map<string, ChatRoom> chat_rooms = 1;
+    message ChatRoom {
         string name = 1;
-        string message = 2;
+        map<string, bool> users = 2;
     }
+}
+
+
+message ChatRoomRequest {
+    string chat_room_name = 1;
+    string user_id = 2;
+}
+
+message ChatMessage {
+    string uuid = 1;
+    string name = 2;
+    string message = 3;
+}
+
+message ChatStreamResponse {
+    google.protobuf.Timestamp timestamp = 1;
+    ChatMessage chat_message =2;
 }

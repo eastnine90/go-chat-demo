@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,121 +20,225 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ChatRoom_Stream_FullMethodName = "/chat.ChatRoom/Stream"
+	Chat_GetList_FullMethodName       = "/chat.Chat/GetList"
+	Chat_EnterOrCreate_FullMethodName = "/chat.Chat/EnterOrCreate"
+	Chat_SendChat_FullMethodName      = "/chat.Chat/SendChat"
 )
 
-// ChatRoomClient is the client API for ChatRoom service.
+// ChatClient is the client API for Chat service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ChatRoomClient interface {
-	Stream(ctx context.Context, opts ...grpc.CallOption) (ChatRoom_StreamClient, error)
+type ChatClient interface {
+	GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ChatRoomsResponse, error)
+	EnterOrCreate(ctx context.Context, in *ChatRoomRequest, opts ...grpc.CallOption) (Chat_EnterOrCreateClient, error)
+	SendChat(ctx context.Context, opts ...grpc.CallOption) (Chat_SendChatClient, error)
 }
 
-type chatRoomClient struct {
+type chatClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewChatRoomClient(cc grpc.ClientConnInterface) ChatRoomClient {
-	return &chatRoomClient{cc}
+func NewChatClient(cc grpc.ClientConnInterface) ChatClient {
+	return &chatClient{cc}
 }
 
-func (c *chatRoomClient) Stream(ctx context.Context, opts ...grpc.CallOption) (ChatRoom_StreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ChatRoom_ServiceDesc.Streams[0], ChatRoom_Stream_FullMethodName, opts...)
+func (c *chatClient) GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ChatRoomsResponse, error) {
+	out := new(ChatRoomsResponse)
+	err := c.cc.Invoke(ctx, Chat_GetList_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &chatRoomStreamClient{stream}
+	return out, nil
+}
+
+func (c *chatClient) EnterOrCreate(ctx context.Context, in *ChatRoomRequest, opts ...grpc.CallOption) (Chat_EnterOrCreateClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Chat_ServiceDesc.Streams[0], Chat_EnterOrCreate_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chatEnterOrCreateClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
-type ChatRoom_StreamClient interface {
-	Send(*StreamRequest) error
-	Recv() (*StreamResponse, error)
+type Chat_EnterOrCreateClient interface {
+	Recv() (*ChatStreamResponse, error)
 	grpc.ClientStream
 }
 
-type chatRoomStreamClient struct {
+type chatEnterOrCreateClient struct {
 	grpc.ClientStream
 }
 
-func (x *chatRoomStreamClient) Send(m *StreamRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *chatRoomStreamClient) Recv() (*StreamResponse, error) {
-	m := new(StreamResponse)
+func (x *chatEnterOrCreateClient) Recv() (*ChatStreamResponse, error) {
+	m := new(ChatStreamResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-// ChatRoomServer is the server API for ChatRoom service.
-// All implementations must embed UnimplementedChatRoomServer
+func (c *chatClient) SendChat(ctx context.Context, opts ...grpc.CallOption) (Chat_SendChatClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Chat_ServiceDesc.Streams[1], Chat_SendChat_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chatSendChatClient{stream}
+	return x, nil
+}
+
+type Chat_SendChatClient interface {
+	Send(*ChatMessage) error
+	CloseAndRecv() (*emptypb.Empty, error)
+	grpc.ClientStream
+}
+
+type chatSendChatClient struct {
+	grpc.ClientStream
+}
+
+func (x *chatSendChatClient) Send(m *ChatMessage) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *chatSendChatClient) CloseAndRecv() (*emptypb.Empty, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(emptypb.Empty)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ChatServer is the server API for Chat service.
+// All implementations must embed UnimplementedChatServer
 // for forward compatibility
-type ChatRoomServer interface {
-	Stream(ChatRoom_StreamServer) error
-	mustEmbedUnimplementedChatRoomServer()
+type ChatServer interface {
+	GetList(context.Context, *emptypb.Empty) (*ChatRoomsResponse, error)
+	EnterOrCreate(*ChatRoomRequest, Chat_EnterOrCreateServer) error
+	SendChat(Chat_SendChatServer) error
+	mustEmbedUnimplementedChatServer()
 }
 
-// UnimplementedChatRoomServer must be embedded to have forward compatible implementations.
-type UnimplementedChatRoomServer struct {
+// UnimplementedChatServer must be embedded to have forward compatible implementations.
+type UnimplementedChatServer struct {
 }
 
-func (UnimplementedChatRoomServer) Stream(ChatRoom_StreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method Stream not implemented")
+func (UnimplementedChatServer) GetList(context.Context, *emptypb.Empty) (*ChatRoomsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetList not implemented")
 }
-func (UnimplementedChatRoomServer) mustEmbedUnimplementedChatRoomServer() {}
+func (UnimplementedChatServer) EnterOrCreate(*ChatRoomRequest, Chat_EnterOrCreateServer) error {
+	return status.Errorf(codes.Unimplemented, "method EnterOrCreate not implemented")
+}
+func (UnimplementedChatServer) SendChat(Chat_SendChatServer) error {
+	return status.Errorf(codes.Unimplemented, "method SendChat not implemented")
+}
+func (UnimplementedChatServer) mustEmbedUnimplementedChatServer() {}
 
-// UnsafeChatRoomServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ChatRoomServer will
+// UnsafeChatServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ChatServer will
 // result in compilation errors.
-type UnsafeChatRoomServer interface {
-	mustEmbedUnimplementedChatRoomServer()
+type UnsafeChatServer interface {
+	mustEmbedUnimplementedChatServer()
 }
 
-func RegisterChatRoomServer(s grpc.ServiceRegistrar, srv ChatRoomServer) {
-	s.RegisterService(&ChatRoom_ServiceDesc, srv)
+func RegisterChatServer(s grpc.ServiceRegistrar, srv ChatServer) {
+	s.RegisterService(&Chat_ServiceDesc, srv)
 }
 
-func _ChatRoom_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ChatRoomServer).Stream(&chatRoomStreamServer{stream})
+func _Chat_GetList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServer).GetList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Chat_GetList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServer).GetList(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type ChatRoom_StreamServer interface {
-	Send(*StreamResponse) error
-	Recv() (*StreamRequest, error)
+func _Chat_EnterOrCreate_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChatRoomRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChatServer).EnterOrCreate(m, &chatEnterOrCreateServer{stream})
+}
+
+type Chat_EnterOrCreateServer interface {
+	Send(*ChatStreamResponse) error
 	grpc.ServerStream
 }
 
-type chatRoomStreamServer struct {
+type chatEnterOrCreateServer struct {
 	grpc.ServerStream
 }
 
-func (x *chatRoomStreamServer) Send(m *StreamResponse) error {
+func (x *chatEnterOrCreateServer) Send(m *ChatStreamResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *chatRoomStreamServer) Recv() (*StreamRequest, error) {
-	m := new(StreamRequest)
+func _Chat_SendChat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChatServer).SendChat(&chatSendChatServer{stream})
+}
+
+type Chat_SendChatServer interface {
+	SendAndClose(*emptypb.Empty) error
+	Recv() (*ChatMessage, error)
+	grpc.ServerStream
+}
+
+type chatSendChatServer struct {
+	grpc.ServerStream
+}
+
+func (x *chatSendChatServer) SendAndClose(m *emptypb.Empty) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chatSendChatServer) Recv() (*ChatMessage, error) {
+	m := new(ChatMessage)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-// ChatRoom_ServiceDesc is the grpc.ServiceDesc for ChatRoom service.
+// Chat_ServiceDesc is the grpc.ServiceDesc for Chat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ChatRoom_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "chat.ChatRoom",
-	HandlerType: (*ChatRoomServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+var Chat_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "chat.Chat",
+	HandlerType: (*ChatServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetList",
+			Handler:    _Chat_GetList_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Stream",
-			Handler:       _ChatRoom_Stream_Handler,
+			StreamName:    "EnterOrCreate",
+			Handler:       _Chat_EnterOrCreate_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "SendChat",
+			Handler:       _Chat_SendChat_Handler,
 			ClientStreams: true,
 		},
 	},
